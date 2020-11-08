@@ -27,7 +27,7 @@ library(readxl)
 
 extract <- read_excel("./catalog.xlsx")
 
-upcoming <- read_excel("C:\\Users\\jacques.tsang\\Desktop\\RD\\upcoming.xlsx") %>%
+upcoming <- read_excel("./upcoming.xlsx") %>%
     mutate(DELIVERY = as.Date(as.numeric(DELIVERY), origin = "1900-01-01")) %>%
     arrange(DELIVERY)
 
