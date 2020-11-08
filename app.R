@@ -11,7 +11,7 @@ library(shiny)
 library(shinyWidgets)
 library(dplyr)
 library(stringr)
-library(aweek)
+library(shinyjs)
 library(readxl)
 
 # DATASET
@@ -25,7 +25,15 @@ library(readxl)
 #         select(SKU, Style, Category, RP, 'In store', Warehouse) %>%
 #         arrange(Category)
 
+upcoming <- read_excel("C:\\Users\\jacques.tsang\\Desktop\\RD\\upcoming.xlsx") %>%
+    mutate(DELIVERY = as.Date(as.numeric(DELIVERY), origin = "1900-01-01")) %>%
+    arrange(DELIVERY)
+
 extract <- read_excel("./catalog.xlsx")
+
+upcoming <- read_excel("C:\\Users\\jacques.tsang\\Desktop\\RD\\upcoming.xlsx") %>%
+    mutate(DELIVERY = as.Date(as.numeric(DELIVERY), origin = "1900-01-01")) %>%
+    arrange(DELIVERY)
 
 # Define UI for application that draws a histogram
 ui <- navbarPage(
@@ -48,8 +56,26 @@ ui <- navbarPage(
                 )
             )
         ),
-        tabPanel("UPCOMING"
-                 
+        tabPanel("UPCOMING",
+                 fluidPage(
+                     tags$style(HTML('body {font-family:"Helvetica",sans-serif; font-size:6px}')),
+                     fluidRow(
+                         column(1,
+                                lapply(seq_along(unique(upcoming$IMPLANTATION)), function(i){
+                                    HTML(paste("<a href='#' id='clicked' style='color:black; text-decoration:none; font-size:20px; font-weight:bold' onclick='detect_click(this)'>",
+                                               unique(upcoming$IMPLANTATION)[i],
+                                               "</a>",
+                                               "<br>")
+                                    )
+                                })
+                         ),
+                         column(10,
+                                includeScript("./detect_click.js"),
+                                uiOutput("up"),
+                                offset = 1
+                         )
+                     )
+                 )
         )
 )
 
@@ -64,7 +90,6 @@ server <- function(input, output) {
 # Pictures
     observeEvent(input$filtre,{
         extract <- data()
-        
         lapply(seq_along(extract$SKU), function(i){
             output[[paste0("image", i)]] <- renderUI({
                 tags$img(src = paste0('http://fastcache-zur.emea.guccigroup.dom/getimage/?Cod=',
@@ -105,6 +130,27 @@ server <- function(input, output) {
         lapply(seq_along(extract$SKU), function(i){
             output[[paste0("warehouse", i)]] <- renderText({
                 paste0("BULK : ",extract$Warehouse[i]," PCS")
+            })
+        })
+    })
+#UPCOMING CATALOG
+    observeEvent(input$clicked,{
+        output$up <- renderUI({
+            upcoming <- upcoming %>% filter(IMPLANTATION == input$clicked)
+            lapply(seq_along(upcoming$SKU), function(j){
+                column(3,
+                       img(src=upcoming$PATH[j], height="50", width="50"),
+                       p(upcoming$SKU[j],
+                         br(),
+                         upcoming$DESC[j],
+                         br(),
+                         paste("RP : ", upcoming$EUR[j], "EUR"),
+                         br(),
+                         paste("ORDER : ", upcoming$QTIES[j], "PCS"),
+                         br(),
+                         paste("DEL : ", upcoming$DELIVERY[j])
+                       )
+                )
             })
         })
     })
